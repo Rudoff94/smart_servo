@@ -4,9 +4,17 @@
 //define photoresistors's ports
 #define PHR1 A5
 #define PHR2 A6
+#define PHR3 A7
 #define THRESHOLD 400
+//define indices
+#define PHR1_ID 1
+#define PHR2_ID 2
+#define PHR3_ID 3
+
 uint16_t last_val_p1;
 uint16_t last_val_p2;
+uint16_t last_val_p3;
+uint8_t last_high_index = 0;
 
 //#define NUM_PHR 2
 //uint16_t last_val_p[NUM_PHR];
@@ -25,9 +33,10 @@ void loop() {
   if (Serial.available()) {
     input = Serial.readStringUntil(" ");
     if (input != "") {
-      Serial.println(input.toInt());
+      uint16_t new_target = input.toInt();
+      Serial.println(new_target);
       srv.stop();
-      srv.setTargetPos(input.toInt());
+      srv.setTargetPos(new_target);
     }
   }
 
@@ -45,26 +54,40 @@ void loop() {
   //    last_val_p[i] = phr_val;
   //  }
 
-  phr1_val = analogRead(PHR1);
-  phr2_val = analogRead(PHR2);
+  uint16_t phr1_val = analogRead(PHR1);
+  uint16_t phr2_val = analogRead(PHR2);
+  uint16_t phr3_val = analogRead(PHR3);
   if (phr1_val > THRESHOLD && last_val_p1 < THRESHOLD) {
-    if (phr2_val < THRESHOLD) {
+    if (last_high_index == PHR3_ID) {
       srv.increase();
     }
     else {
       srv.decrease();
     }
     last_val_p1 = phr1_val;
+    last_high_index = PHR1_ID;
   }
 
   if (phr2_val > THRESHOLD && last_val_p2 < THRESHOLD) {
-    if (phr1_val > THRESHOLD) {
+    if (last_high_index == PHR1_ID) {
       srv.increase();
     }
     else {
       srv.decrease();
     }
-    last_val_p1 = phr1_val;
+    last_val_p2 = phr2_val;
+    last_high_index = PHR2_ID;
   }
-    srv.update();
+
+  if (phr3_val > THRESHOLD && last_val_p3 < THRESHOLD) {
+    if (last_high_index == PHR2_ID) {
+      srv.increase();
+    }
+    else {
+      srv.decrease();
+    }
+    last_val_p3 = phr3_val;
+    last_high_index = PHR3_ID;
   }
+  srv.update();
+}
